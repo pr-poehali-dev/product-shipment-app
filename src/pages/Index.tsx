@@ -79,12 +79,260 @@ function SparkBars({ data, color }: { data: number[]; color: string }) {
   );
 }
 
+const CLIENTS = [
+  "ООО «Альфа Трейд»",
+  "АО «СтройГрупп»",
+  "ИП Петров А.В.",
+  "ООО «Мегаопт»",
+  "АО «ПромТехника»",
+  "ООО «Северная логистика»",
+  "ЗАО «ТехноМаш»",
+  "ИП Сидоренко К.Л.",
+];
+
+// ─── New shipment modal ────────────────────────────────────────────────────
+function NewShipmentModal({ onClose, onSave }: { onClose: () => void; onSave: (s: Shipment) => void }) {
+  const [client, setClient] = useState("");
+  const [cipher, setCipher] = useState("");
+  const [qty, setQty] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState("");
+  const [step, setStep] = useState<"form" | "success">("form");
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhoto(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const canSubmit = client && cipher.trim() && qty.trim() && photo;
+
+  const handleSubmit = () => {
+    const newId = `ОТГ-2026-0${185 + Math.floor(Math.random() * 10)}`;
+    onSave({
+      id: newId,
+      date: "18.04.2026",
+      destination: client,
+      items: parseInt(qty) || 0,
+      weight: "—",
+      status: "pending",
+      carrier: "—",
+      invoice: `ФС-2026-${Math.floor(Math.random() * 9000 + 1000)}`,
+    });
+    setStep("success");
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(10,18,35,0.65)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="bg-white rounded-lg shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fade-in"
+        style={{ border: "1px solid hsl(var(--border))" }}
+      >
+        {step === "success" ? (
+          <div className="flex flex-col items-center justify-center py-14 px-8 text-center gap-4">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ background: "hsl(142 65% 92%)" }}
+            >
+              <Icon name="CheckCircle2" size={32} style={{ color: "hsl(142 65% 35%)" }} />
+            </div>
+            <div>
+              <p className="text-lg font-semibold">Отгрузка зарегистрирована</p>
+              <p className="text-sm text-muted-foreground mt-1">Запись добавлена в журнал</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="mt-2 px-6 py-2.5 rounded text-sm font-medium text-white transition-opacity hover:opacity-90"
+              style={{ background: "hsl(var(--primary))" }}
+            >
+              Закрыть
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: "hsl(var(--border))" }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-7 h-7 rounded flex items-center justify-center"
+                  style={{ background: "hsl(var(--blue-accent))" }}
+                >
+                  <Icon name="PackagePlus" size={14} className="text-white" />
+                </div>
+                <p className="text-sm font-semibold">Новая отгрузка</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+              >
+                <Icon name="X" size={15} style={{ color: "hsl(var(--muted-foreground))" }} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 flex flex-col gap-4">
+              {/* Client select */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Заказчик *
+                </label>
+                <div className="relative">
+                  <select
+                    value={client}
+                    onChange={(e) => setClient(e.target.value)}
+                    className="w-full appearance-none bg-white border rounded px-3 py-2.5 text-sm outline-none pr-8 cursor-pointer"
+                    style={{
+                      borderColor: client ? "hsl(var(--blue-accent))" : "hsl(var(--border))",
+                      color: client ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+                    }}
+                  >
+                    <option value="">Выберите заказчика...</option>
+                    {CLIENTS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <Icon
+                    name="ChevronDown"
+                    size={14}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ color: "hsl(var(--muted-foreground))" }}
+                  />
+                </div>
+              </div>
+
+              {/* Cipher */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Шифр *
+                </label>
+                <input
+                  type="text"
+                  value={cipher}
+                  onChange={(e) => setCipher(e.target.value)}
+                  placeholder="Например: ПР-2026-АВ12"
+                  className="border rounded px-3 py-2.5 text-sm outline-none font-mono-nums transition-colors"
+                  style={{
+                    borderColor: cipher ? "hsl(var(--blue-accent))" : "hsl(var(--border))",
+                    background: "white",
+                  }}
+                />
+              </div>
+
+              {/* Quantity */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Количество (позиций) *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                  placeholder="0"
+                  className="border rounded px-3 py-2.5 text-sm outline-none font-mono-nums transition-colors"
+                  style={{
+                    borderColor: qty ? "hsl(var(--blue-accent))" : "hsl(var(--border))",
+                    background: "white",
+                  }}
+                />
+              </div>
+
+              {/* Photo */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Фото отгрузки *
+                </label>
+                <label
+                  className="relative flex flex-col items-center justify-center rounded border-2 border-dashed cursor-pointer transition-all overflow-hidden"
+                  style={{
+                    borderColor: photo ? "hsl(var(--blue-accent))" : "hsl(var(--border))",
+                    minHeight: 110,
+                    background: photo ? "hsl(216 28% 97%)" : "hsl(216 20% 98%)",
+                  }}
+                >
+                  {photo ? (
+                    <div className="relative w-full">
+                      <img src={photo} alt="preview" className="w-full object-cover" style={{ maxHeight: 140 }} />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,0.4)" }}>
+                        <p className="text-white text-xs font-medium">Изменить фото</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-6 px-4 text-center">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "hsl(216 20% 92%)" }}
+                      >
+                        <Icon name="Camera" size={18} style={{ color: "hsl(var(--muted-foreground))" }} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground))" }}>Прикрепить фото</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG, HEIC до 20 МБ</p>
+                      </div>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={handlePhoto} />
+                </label>
+                {photoName && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Icon name="Paperclip" size={11} />
+                    {photoName}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-6 py-4 flex items-center justify-between border-t"
+              style={{ borderColor: "hsl(var(--border))", background: "hsl(216 20% 98%)" }}
+            >
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded text-sm font-medium border transition-colors hover:bg-secondary"
+                style={{ borderColor: "hsl(var(--border))", color: "hsl(var(--foreground))" }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="flex items-center gap-2 px-5 py-2 rounded text-sm font-medium text-white transition-opacity"
+                style={{
+                  background: "hsl(var(--primary))",
+                  opacity: canSubmit ? 1 : 0.4,
+                  cursor: canSubmit ? "pointer" : "not-allowed",
+                }}
+              >
+                <Icon name="PackagePlus" size={14} />
+                Зарегистрировать
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Journal view ─────────────────────────────────────────────────────────
 function JournalView() {
   const [filter, setFilter] = useState<"all" | Shipment["status"]>("all");
   const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [shipments, setShipments] = useState(SHIPMENTS);
 
-  const filtered = SHIPMENTS.filter((s) => {
+  const filtered = shipments.filter((s) => {
     const matchStatus = filter === "all" || s.status === filter;
     const q = search.toLowerCase();
     const matchSearch =
@@ -103,8 +351,54 @@ function JournalView() {
     { id: "problem", label: "Проблемы" },
   ];
 
+  const handleSave = (s: Shipment) => {
+    setShipments((prev) => [s, ...prev]);
+  };
+
   return (
     <div className="flex flex-col gap-4 animate-slide-in">
+      {/* Hero banner */}
+      <div
+        className="relative rounded-lg overflow-hidden px-8 py-7 flex items-center justify-between"
+        style={{
+          background: "linear-gradient(120deg, hsl(220 35% 16%) 0%, hsl(221 55% 25%) 60%, hsl(211 80% 38%) 100%)",
+          minHeight: 120,
+        }}
+      >
+        {/* decorative grid lines */}
+        <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="white" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+        {/* glow */}
+        <div
+          className="absolute right-0 top-0 w-64 h-full opacity-20 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at right center, hsl(211 80% 65%), transparent 70%)" }}
+        />
+        <div className="relative z-10">
+          <p className="text-white text-lg font-semibold leading-tight">Журнал отгрузок</p>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
+            {shipments.length} записей · обновлено сегодня
+          </p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="relative z-10 flex items-center gap-2.5 px-5 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95"
+          style={{
+            background: "rgba(255,255,255,0.15)",
+            border: "1px solid rgba(255,255,255,0.25)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Icon name="Plus" size={16} />
+          Новая отгрузка
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div
@@ -136,13 +430,6 @@ function JournalView() {
             </button>
           ))}
         </div>
-        <button
-          className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium border transition-colors hover:bg-secondary ml-auto"
-          style={{ borderColor: "hsl(var(--border))", color: "hsl(var(--foreground))" }}
-        >
-          <Icon name="Plus" size={13} />
-          Новая отгрузка
-        </button>
       </div>
 
       {/* Table */}
@@ -198,7 +485,7 @@ function JournalView() {
           style={{ borderColor: "hsl(var(--border))", background: "hsl(216 20% 98%)" }}
         >
           <span className="text-xs text-muted-foreground">
-            Показано {filtered.length} из {SHIPMENTS.length} записей
+            Показано {filtered.length} из {shipments.length} записей
           </span>
           <div className="flex items-center gap-1">
             <button className="p-1 rounded hover:bg-secondary transition-colors">
@@ -211,6 +498,13 @@ function JournalView() {
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <NewShipmentModal
+          onClose={() => setShowModal(false)}
+          onSave={(s) => { handleSave(s); }}
+        />
+      )}
     </div>
   );
 }
